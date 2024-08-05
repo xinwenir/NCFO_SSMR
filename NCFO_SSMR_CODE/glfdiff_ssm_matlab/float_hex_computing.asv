@@ -1,0 +1,19 @@
+t1 = '3ff88d4b';
+t2 = 'bb818a75';
+t3 = 'bad95852';
+t4 = 'ba295404';
+t5 = 'ba05a17a';
+t6 = '3d1aa5a';
+t7 = 'bcd29871';
+t8 = '34902154';
+st1 = typecast(uint32(hex2dec(t1)),'single');
+st2 = typecast(uint32(hex2dec(t2)),'single');
+st3 = typecast(uint32(hex2dec(t3)),'single');
+st4 = typecast(uint32(hex2dec(t4)),'single');
+st5 = typecast(uint32(hex2dec(t5)),'single');
+st6 = typecast(uint32(hex2dec(t6)),'single');
+st7 = typecast(uint32(hex2dec(t7)),'single');
+st8 = typecast(uint32(hex2dec(t8)),'single');
+
+d = st1 + st2 + st3 + st4 + st5 + st6 + st7 + st8;
+D0 = num2hex(single(d))

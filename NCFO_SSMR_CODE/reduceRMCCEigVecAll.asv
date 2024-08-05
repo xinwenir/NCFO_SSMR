@@ -1,0 +1,181 @@
+function  [AOut, BOut, COut, DOut, ordsOut, FlagAll,TestFlag] = ...
+    reduceRMCCEigVecAll(A,B,C,D,Ops,Ords)
+%--------------------------------------------------------------------
+% reduceRMETrim
+% Obtain a lower-dimensional Roesser model by  constrained common
+% eigenvectors.
+%
+%Syntax:
+% [AOut, BOut, COut, DOut, ordsOut, FlagAll,TestFlag] = ...
+%     reduceRMCCEigVecAll(A,B,C,D,Ops,Ords)
+%
+%Description:
+%[AOut, BOut, COut, DOut, OrdsOut, flag,testFlag] =...
+%reduceRMETrim(A,B,C,D,Ops,Ords) returns Obtain a lower-dimensional Roesser 
+% model by constrained common eigenvectors.
+%   Inpus:
+%      A, B, C, D - the original Roesser state-space realization
+%      Ops - a vector whose entries are backward operators in the system
+%      Ords - orders of the operators
+%   Output parameters:
+%      AOut, BAOut, CAOut, DAOut - a lower-dimensional n-D Roesser model
+%      OrdsOut - the new orders of the operators
+%      FlagAll - reduction flag
+%             0: no reduction
+%             1: reduction complete
+%      test - test result
+%             0: wrong
+%             1: right
+%--------------------------------------------------------------------------
+% Example:
+
+%   Date:
+%      3 April, 2017 by Dongdong Zhao.
+%---------------------------------------------------------------------
+%-----------------------------------------------------------------
+% Begin Initialization.
+% record the original state-space realization for test.
+% A0=A;
+% B0=B;
+% C0=C;
+% D0=D;
+OpsNum=size(Ops,2);
+% calculate the original transfer matrix G0.
+Z = [];
+for k = 1:OpsNum
+    Z = blkdiag(Z, Ops(k)*eye(Ords(k)));       % calculate Z.
+end
+G0=simplify(C*Z/(eye(size(A))-A*Z)*B+D);
+% initial the reduction flag.
+FlagAll = 0;
+FlagRight = 1;
+FlagLeft = 1;
+FlagEx = 1;
+% End the Initialization.
+while  FlagRight == 1
+    [A, B, C, D, Ords, FlagRight,TestRight] = ...
+        reduceRMCCREigVec(A,B,C,D,Ops,Ords);
+    
+    if ~isoneTest(TestRight)
+        error('A wrong result obtained by the reduceRMCCREigVec')
+    end
+    if FlagRight == 1
+        FlagAll = 1;
+    end
+end
+%   M = [A,B;C,D]
+while FlagLeft == 1
+    [A, B, C, D, Ords, FlagLeft,TestLeft] =...
+        reduceRMCCLEigVec(A,B,C,D,Ops,Ords);
+    if ~isoneTest(TestLeft)
+        error('A wrong result obtained by the reduceRMCCLEigVec')
+    end
+    
+    if FlagLeft == 1
+        FlagAll = 1;
+    end
+end
+
+while FlagEx == 1
+    FlagEx = 0;
+    % First Step
+    AI = A; % interminate A;
+    BI = B;
+    CI = C;
+    DI = D;
+    [A, B, C, D, Ords, Flag3Col,TestEx] =...
+        reduceRMETrimColSwap(A,B,C,D,Ops,Ords);
+    if ~isoneTest(TestEx)
+        error('A wrong result obtained by the reduceRMETrimColSwap')
+    end
+    if Flag3Col
+        FlagRight = 1;
+        FlagLeft = 1;
+        while  FlagRight == 1
+            [A, B, C, D, Ords, FlagRight,TestRight] = ...
+                reduceRMCCREigVec(A,B,C,D,Ops,Ords);
+            
+            if ~isoneTest(TestRight)
+                error('A wrong result obtained by the reduceRMCCREigVec')
+            end
+            if FlagRight == 1
+                FlagEx = 1;
+            end
+        end
+        %   M = [A,B;C,D]
+        while FlagLeft == 1
+            [A, B, C, D, Ords, FlagLeft,TestLeft] =...
+                reduceRMCCLEigVec(A,B,C,D,Ops,Ords);
+            if ~isoneTest(TestLeft)
+                error('A wrong result obtained by  reduceRMCCLEigVec')
+            end
+            if FlagLeft == 1
+                FlagEx = 1;
+            end
+        end
+    end
+    if FlagEx == 0
+        A = AI;
+        B = BI;
+        C = CI;
+        D = DI;
+    end
+    %Second Step
+    [A, B, C, D, Ords, Flag3Row,TestEx]=...
+        reduceRMETrimRowSwap(A,B,C,D,Ops,Ords);
+    if ~isoneTest(TestEx)
+        
+        error('A wrong result obtained by reduceRMETrimRowSwap')
+    end
+    if Flag3Row
+        FlagRight = 1;
+        FlagLeft = 1;
+        while  FlagRight == 1
+            [A, B, C, D, Ords, FlagRight,TestRight] = ...
+                reduceRMCCREigVec(A,B,C,D,Ops,Ords);
+            if ~isoneTest(TestRight)
+                error('A wrong result obtained by  reduceRMCCREigVec')
+            end
+            if FlagRight == 1
+                FlagEx = 1;
+                FlagAll = 1;
+            end
+        end
+        %   M = [A,B;C,D]
+        while FlagLeft == 1
+            [A, B, C, D, Ords, FlagLeft,TestLeft] =...
+                reduceRMCCLEigVec(A,B,C,D,Ops,Ords);
+            if ~isoneTest(TestLeft)
+                error('A wrong result obtained by  reduceRMCCLEigVec')
+            end
+            if FlagLeft == 1
+                FlagEx = 1;
+                FlagAll = 1;
+            end
+        end
+    end
+end
+
+% Outputs
+AOut=A;
+BOut=B;
+COut=C;
+DOut=D;
+ordsOut=Ords;
+
+
+
+if FlagAll == 1
+    
+    % test
+    Z = [];
+    for k = 1:OpsNum
+        Z = blkdiag(Z,Ops(k)*eye(ordsOut(k)));    % calculate Z.
+    end
+    G=simplify(COut*Z*inv(eye(size(Z,1))-AOut*Z)*BOut+DOut);
+    TestFlag = simplify(G - G0) == 0;
+    
+else
+    % flag~=1 (flag==0) means that the dimension could not be reduced.
+    TestFlag = ones(size(G0));
+end

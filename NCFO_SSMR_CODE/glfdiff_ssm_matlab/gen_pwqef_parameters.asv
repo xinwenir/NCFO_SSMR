@@ -1,0 +1,72 @@
+function [c_sx] = gen_pwqef_parameters(t,alpha,h,r,L)
+    FO_N = length(r);
+    Thn = t * h;
+    %w = ones(FO_N,1);
+    DIM = sum(r);
+    for i = 1 : FO_N
+        [w, w_qf, qsp(i,:,:), w_lf, lsp] = w_gen(alpha(i),h,Thn,L,"quadratic");     
+    end 
+
+    L0 = 32;
+    L1 = 2 * L0; %64
+    L2 = 2 * L1; %128
+    L3 = 2 * L2; %256
+    L4 = 2 * L3; %512
+    L5 = 2 * L4; %1024
+    L6 = 2 * L5; %2048
+    L7 = 2 * L6; %4096
+
+    if     L == 256
+        L_Contain = [L0, L1, L2, L3];% 256 ----> end
+    elseif L == 512
+        L_Contain = [L0, L1, L2, L3, L4];% 512 ----> end
+    elseif L == 1024
+        L_Contain = [L0, L1, L2, L3, L4, L5];% 1024 ----> end
+    elseif L == 2048
+        L_Contain = [L0, L1, L2, L3, L4, L5, L6];% 2048 ----> end
+    elseif L == 4096
+        L_Contain = [L0, L1, L2, L3, L4, L5, L6, L7];% 4096 ----> end
+    end 
+    c_0 = [0.0; 0.0; 0.0; 0.0; 0.0; 0.0; 0.0];
+    k = 1;
+    for i = 1 : FO_N
+        for j = 1 : r(i)
+            for L_index = 1 : (length(L_Contain))    
+                n = L_Contain(L_index);
+                Lm = L_Contain(L_index);
+                c_s1b = 2 * Lm * qsp(i,L_index,1) * n * h^2 + Lm * qsp(i,L_index,2) * h; %2*L*p1*j*h^2 + L*p2*h ==>--
+                c_s1c = Lm^2 * qsp(i,L_index,1) * h^2; %L^2 * p1*h^2 ==>--
+                c_s1d = 2 * Lm * qsp(i,L_index,1) * h^2; %2*L*p1*h^2 ==> --
+        
+                c_s3a = qsp(i,L_index,1) * (n * h)^2 + qsp(i,L_index,2) * n * h + qsp(i,L_index,3); %p1*(jh)^2 + p2*(jh) + p3
+                c_s3b = 2 * qsp(i,L_index,1)* n * h^2 + qsp(i,L_index,2) * h; %2*p1*j*h^2 + p2*h
+                c_s3c = qsp(i,L_index,1) * h^2; %p1*h^2
+                c_s3d = 2 * qsp(i,L_index,1) * h^2; %2*p1*h^2
+
+                c_sx_q = [c_s1b; c_s1c; c_s1d; c_s3a; c_s3b; c_s3c; c_s3d];
+                
+                if k == 1
+                    c_sx = c_sx_q;
+                else
+                    c_sx = [c_sx;c_sx_q];
+                end
+                k = k + 1;
+                %num2hex(single(c_sx))
+            end  
+            if length(L_Contain) < 7
+                c_sx = [c_sx;c_0];
+                
+        end
+    end
+  
+% qsp(L_index).qfres0.p1
+% qsp(L_index).qfres0.p2
+% qsp(L_index).qfres0.p3
+% c_s1b[i],  %2*L*p1*j*h^2 + L*p2*h
+% c_s1c[i],  %L^2 * p1*h^2
+% c_s1d[i],  %2*L*p1*h^2
+% 
+% c_s3a[i],  %p1*(jh)^2 + p2*(jh) + p3
+% c_s3b[i],  %2*p1*j*h^2 + p2*h
+% c_s3c[i],  %p1*h^2
+% c_s3d[i][, %2*p1*h^2

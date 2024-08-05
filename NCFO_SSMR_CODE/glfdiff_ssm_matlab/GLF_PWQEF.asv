@@ -1,0 +1,16 @@
+function [dx] = GLF_PWQEF(u,t,alpha,h,L) %u = xxxx*t.t = 0 : 1 : 1000
+    %arguments, u(:,1) single, t(1,1) int32, A(:,:),B(:,:),C(:,:),D(:,:) single, x0(:,1), alpha(:,1) single, h(1,1) single, r(1,:) int32, end
+    
+    dx = zeros(1,'single');
+        
+    Thn = t * h;
+    
+    [w, w_qf, qsp, w_lf,lsp] = w_gen(alpha(i),h,Thn,L);      
+
+    for i = 1 : t
+      x_q = rot90(x(k,1 : i-1));
+      dx(k) = glfdiff_sim(x_q,i,w_qf(2:t+1)); 
+      %dx(k) = glfdiff_sim_l(x_q,i,w_qf(foi,2:L+1),L); 
+      k = k + 1;                      
+    end
+end   
